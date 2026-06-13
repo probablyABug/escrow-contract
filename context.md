@@ -13,6 +13,11 @@
 8. **Job Dashboard Page** - Built `app/dashboard/page.tsx` with mock job data and milestone interaction
 9. **Dev Server** - Successfully running on http://localhost:3001 with all routes compiled!
 
+### ✅ Completed (Contract):
+10. **Contract Deployment** - Deployed milestone escrow contract to Stellar Testnet!
+    - Contract ID: `CBBRYWY6ROXCM6AHP4COM3AL6UDPTY66FXF43Q7PNEIPU53RZOGHBYP3`
+    - Explorer: https://stellar.expert/explorer/testnet/contract/CBBRYWY6ROXCM6AHP4COM3AL6UDPTY66FXF43Q7PNEIPU53RZOGHBYP3
+
 ### 📁 Project Structure:
 ```
 Milesto/
@@ -39,6 +44,8 @@ Milesto/
     ├── postcss.config.mjs
     ├── .gitignore
     ├── .env.local
+    ├── .env.local.example
+    ├── README.md
     ├── app/
     │   ├── layout.tsx
     │   ├── page.tsx
@@ -58,7 +65,6 @@ Milesto/
 ```
 
 ### 🎯 Next Steps (Potential Ideas):
-- Deploy the Soroban smart contract to Stellar Testnet
 - Wire up the frontend to the actual contract (initialize, fund, deliver, approve, dispute, resolve)
 - Add support for multiple jobs
 - Add more test cases for edge scenarios
