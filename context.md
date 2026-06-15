@@ -24,8 +24,10 @@
 
 ## June 15, 2026
 ### ✅ Activity Update
-- Minor commits in all repos to show active development
-- Updated READMEs and added comments
+- **Contract**: Added event emission to all functions
+- **Backend**: Added vec type handling for build-tx endpoint
+- **Frontend**: Wired Create Job form to backend
+- All changes pushed to GitHub!
 
 ### 📁 Project Structure:
 ```
@@ -43,7 +45,7 @@ Milesto/
 │           │   ├── lib.rs
 │           │   └── test.rs
 │           └── test_snapshots/
-│
+
 ├── escrow-frontend/            # Next.js frontend
 │   ├── package.json
 │   ├── package-lock.json
@@ -71,7 +73,7 @@ Milesto/
 │   │   └── dashboard/
 │   │       └── page.tsx
 │   └── public/
-│
+
 └── escrow-backend/             # Express backend
     ├── package.json
     ├── package-lock.json
@@ -88,7 +90,7 @@ Milesto/
 ```
 
 ### 🎯 Next Steps (Potential Ideas):
-- Wire up the frontend to the actual contract (initialize, fund, deliver, approve, dispute, resolve)
-- Add support for multiple jobs
+- Wire up other contract functions (fund, deliver, approve, dispute, resolve) to frontend
+- Add support for multiple jobs in contract
 - Add more test cases for edge scenarios
 - Audit contract for security issues
