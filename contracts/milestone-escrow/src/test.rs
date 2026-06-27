@@ -2194,3 +2194,82 @@ fn test_approve_partial_before_initialize_fails() {
     let result = escrow.try_approve_partial(&caller, &0u32, &1_000_i128);
     assert_eq!(result, Err(Ok(Error::NotInitialized)));
 }
+
+// ============================================================================
+// claim_auto_release — comprehensive test matrix
+// ============================================================================
+
+#[test]
+fn test_claim_auto_release_state_transitions() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let client_addr = Address::generate(&env);
+    let freelancer_addr = Address::generate(&env);
+    let arbiter_addr = Address::generate(&env);
+    let admin_addr = Address::generate(&env);
+
+    let token_contract_id = env
+        .register_stellar_asset_contract_v2(admin_addr.clone())
+        .address();
+    let token = token::Client::new(&env, &token_contract_id);
+    let token_admin = token::StellarAssetClient::new(&env, &token_contract_id);
+    token_admin.mint(&client_addr, &60_000);
+
+    let contract_id = env.register(MilestoneEscrow, ());
+    let client = MilestoneEscrowClient::new(&env, &contract_id);
+
+    // 6 milestones for all states
+    let amounts = vec![&env, 10_000_i128, 10_000_i128, 10_000_i128, 10_000_i128, 10_000_i128, 10_000_i128];
+    client.initialize(
+        &admin_addr,
+        &client_addr,
+        &freelancer_addr,
+        &arbiter_addr,
+        &token_contract_id,
+        &100,
+        &amounts,
+    );
+    client.fund(&client_addr);
+
+    // Test 1: Pending → should fail
+    let result = client.try_claim_auto_release(&freelancer_addr, &0u32);
+    assert_eq!(result, Err(Ok(Error::InvalidStatus)));
+
+    // Test 2: Delivered → Released (should pass)
+    client.mark_delivered(&freelancer_addr, &1u32);
+    env.ledger().with_mut(|li| li.timestamp += 200);
+    client.claim_auto_release(&freelancer_addr, &1u32);
+    let job = client.get_job();
+    assert_eq!(job.milestones.get(1).unwrap().status, MilestoneStatus::Released);
+    assert_eq!(token.balance(&freelancer_addr), 10_000);
+
+    // Test 3: PartiallyReleased → Released (should pass)
+    client.mark_delivered(&freelancer_addr, &2u32);
+    client.approve_partial(&client_addr, &2u32, &4_000_i128);
+    assert_eq!(token.balance(&freelancer_addr), 14_000);
+    let job = client.get_job();
+    assert_eq!(job.milestones.get(2).unwrap().status, MilestoneStatus::PartiallyReleased);
+    env.ledger().with_mut(|li| li.timestamp += 200);
+    client.claim_auto_release(&freelancer_addr, &2u32);
+    let job = client.get_job();
+    assert_eq!(job.milestones.get(2).unwrap().status, MilestoneStatus::Released);
+    assert_eq!(token.balance(&freelancer_addr), 20_000);
+
+    // Test 4: Released → should fail
+    let result = client.try_claim_auto_release(&freelancer_addr, &1u32);
+    assert_eq!(result, Err(Ok(Error::InvalidStatus)));
+
+    // Test 5: Disputed → should fail
+    client.mark_delivered(&freelancer_addr, &3u32);
+    client.raise_dispute(&client_addr, &3u32);
+    let result = client.try_claim_auto_release(&freelancer_addr, &3u32);
+    assert_eq!(result, Err(Ok(Error::InvalidStatus)));
+
+    // Test 6: Refunded → should fail
+    client.mark_delivered(&freelancer_addr, &4u32);
+    client.raise_dispute(&client_addr, &4u32);
+    client.resolve_dispute(&arbiter_addr, &4u32, &false);
+    let result = client.try_claim_auto_release(&freelancer_addr, &4u32);
+    assert_eq!(result, Err(Ok(Error::InvalidStatus)));
+}
