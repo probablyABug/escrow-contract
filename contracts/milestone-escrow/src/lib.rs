@@ -588,6 +588,22 @@ impl MilestoneEscrow {
 
         milestone.status = MilestoneStatus::Released;
         Self::store_milestone(&env, milestone_index, &milestone);
+
+        env.events().publish(
+            (symbol_short!("approve"),),
+            ApprovedEvent {
+                contract_id: env.current_contract_address(),
+                milestone_index,
+                client: meta.client,
+                freelancer: meta.freelancer,
+                token: meta.token,
+                amount: remaining,
+                released_amount: milestone.released_amount,
+                remaining: milestone.amount - milestone.released_amount,
+                status: milestone.status.clone(),
+            },
+        );
+
         Ok(())
     }
 
