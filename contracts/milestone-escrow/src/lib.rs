@@ -527,7 +527,7 @@ impl MilestoneEscrow {
             return Err(Error::InvalidAmount);
         }
 
-        let remaining = milestone.amount - milestone.released_amount;
+        let remaining = milestone.amount.checked_sub(milestone.released_amount).ok_or(Error::InvalidAmount)?;
         if amount > remaining {
             return Err(Error::InvalidAmount);
         }
@@ -536,7 +536,7 @@ impl MilestoneEscrow {
         token_client.transfer(&env.current_contract_address(), &meta.freelancer, &amount);
 
         let mut updated_milestone = milestone;
-        updated_milestone.released_amount += amount;
+        updated_milestone.released_amount = updated_milestone.released_amount.checked_add(amount).ok_or(Error::InvalidAmount)?;
 
         if updated_milestone.released_amount == updated_milestone.amount {
             updated_milestone.status = MilestoneStatus::Released;
@@ -546,6 +546,7 @@ impl MilestoneEscrow {
 
         Self::store_milestone(&env, milestone_index, &updated_milestone);
 
+        let event_remaining = updated_milestone.amount.checked_sub(updated_milestone.released_amount).ok_or(Error::InvalidAmount)?;
         env.events().publish(
             (symbol_short!("approve"),),
             ApprovedEvent {
@@ -556,7 +557,7 @@ impl MilestoneEscrow {
                 token: meta.token,
                 amount,
                 released_amount: updated_milestone.released_amount,
-                remaining: updated_milestone.amount - updated_milestone.released_amount,
+                remaining: event_remaining,
                 status: updated_milestone.status.clone(),
             },
         );
@@ -588,7 +589,7 @@ impl MilestoneEscrow {
             return Err(Error::InvalidStatus);
         }
 
-        let remaining = milestone.amount - milestone.released_amount;
+        let remaining = milestone.amount.checked_sub(milestone.released_amount).ok_or(Error::InvalidAmount)?;
         if remaining <= 0 {
             return Err(Error::InvalidAmount);
         }
